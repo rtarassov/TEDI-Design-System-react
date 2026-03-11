@@ -14,17 +14,11 @@ import {
 import cn from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Col, Row } from '../../layout/grid';
 import TextField, { TextFieldProps } from '../textfield/textfield';
+import { TimeGrid } from './components/time-grid/time-grid';
+import { TimeWheel } from './components/time-wheel/time-wheel';
 import styles from './time-field.module.scss';
-import {
-  findClosestMinute,
-  generateHours,
-  generateMinutes,
-  getScrollIndex,
-  ITEM_HEIGHT,
-  parseTime,
-} from './time-field-helpers';
+import { findClosestMinute, generateHours, generateMinutes, ITEM_HEIGHT, parseTime } from './time-field-helpers';
 
 export interface TimeFieldProps {
   /**
@@ -145,12 +139,10 @@ export const TimeField: React.FC<TimeFieldProps> = ({
 
   const { refs, context, x, y, strategy } = floating;
 
-  // ── FIX: Call all interaction hooks unconditionally ──
   const clickInteraction = useClick(context);
   const dismissInteraction = useDismiss(context);
   const roleInteraction = useRole(context, { role: 'listbox' });
 
-  // Then conditionally include only the ones we want
   const interactions = useInteractions([
     ...(openBehavior === 'input' && !readOnly ? [clickInteraction] : []),
     dismissInteraction,
@@ -185,59 +177,6 @@ export const TimeField: React.FC<TimeFieldProps> = ({
       behavior: 'instant',
     });
   }, [open, currentValue, readOnly, hours, minutes]);
-
-  const lastHourIndex = useRef<number | null>(null);
-  const lastMinuteIndex = useRef<number | null>(null);
-
-  const handleHourScroll = () => {
-    if (!hourRef.current) return;
-
-    const index = getScrollIndex(hourRef.current.scrollTop);
-    if (index === lastHourIndex.current) return;
-    lastHourIndex.current = index;
-
-    const hour = hours[index];
-    if (!hour) return;
-
-    updateTime(`${hour}:${selectedMinute}`);
-  };
-
-  const handleMinuteScroll = () => {
-    if (!minuteRef.current) return;
-
-    const index = getScrollIndex(minuteRef.current.scrollTop);
-    if (index === lastMinuteIndex.current) return;
-    lastMinuteIndex.current = index;
-
-    const minute = minutes[index];
-    if (!minute) return;
-
-    updateTime(`${selectedHour}:${minute}`);
-  };
-
-  const handleHourClick = (index: number) => {
-    const hour = hours[index];
-    if (!hour) return;
-
-    updateTime(`${hour}:${selectedMinute}`);
-
-    hourRef.current?.scrollTo({
-      top: index * ITEM_HEIGHT,
-      behavior: 'smooth',
-    });
-  };
-
-  const handleMinuteClick = (index: number) => {
-    const minute = minutes[index];
-    if (!minute) return;
-
-    updateTime(`${selectedHour}:${minute}`);
-
-    minuteRef.current?.scrollTo({
-      top: index * ITEM_HEIGHT,
-      behavior: 'smooth',
-    });
-  };
 
   return (
     <>
@@ -276,58 +215,23 @@ export const TimeField: React.FC<TimeFieldProps> = ({
               })}
             >
               {availableTimes ? (
-                <div className={styles['tedi-time-field__grid']}>
-                  <Row gutter={2}>
-                    {availableTimes.map((time) => (
-                      <Col width={4} key={time}>
-                        <div
-                          className={cn(styles['tedi-time-field__grid-item'], {
-                            [styles['tedi-time-field__grid-item--selected']]: time === currentValue,
-                          })}
-                          onClick={() => {
-                            updateTime(time);
-                            setOpen(false);
-                          }}
-                        >
-                          {time}
-                        </div>
-                      </Col>
-                    ))}
-                  </Row>
-                </div>
+                <TimeGrid
+                  times={availableTimes}
+                  value={currentValue}
+                  onSelect={(time) => {
+                    updateTime(time);
+                    setOpen(false);
+                  }}
+                />
               ) : (
                 <div className={styles['tedi-time-field__wheel']}>
-                  <div ref={hourRef} className={styles['tedi-time-field__wheel-column']} onScroll={handleHourScroll}>
-                    {hours.map((h, idx) => (
-                      <div
-                        key={h}
-                        className={cn(styles['tedi-time-field__wheel-item'], {
-                          [styles['tedi-time-field__wheel-item--selected']]: h === selectedHour,
-                        })}
-                        onClick={() => handleHourClick(idx)}
-                      >
-                        {h}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div
-                    ref={minuteRef}
-                    className={styles['tedi-time-field__wheel-column']}
-                    onScroll={handleMinuteScroll}
-                  >
-                    {minutes.map((m, idx) => (
-                      <div
-                        key={m}
-                        className={cn(styles['tedi-time-field__wheel-item'], {
-                          [styles['tedi-time-field__wheel-item--selected']]: m === selectedMinute,
-                        })}
-                        onClick={() => handleMinuteClick(idx)}
-                      >
-                        {m}
-                      </div>
-                    ))}
-                  </div>
+                  <TimeWheel
+                    hours={hours}
+                    minutes={minutes}
+                    selectedHour={selectedHour}
+                    selectedMinute={selectedMinute}
+                    onChange={(hour, minute) => updateTime(`${hour}:${minute}`)}
+                  />
                 </div>
               )}
             </div>
