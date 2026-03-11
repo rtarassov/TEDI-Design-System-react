@@ -28,6 +28,7 @@ export const findClosestMinute = (target: string, mins: string[]): string => {
   if (!mins.length) return '00';
 
   const t = Number(target);
+
   if (isNaN(t)) return mins[0];
 
   return mins.reduce((best, curr) => {
@@ -39,7 +40,7 @@ export const findClosestMinute = (target: string, mins: string[]): string => {
 };
 
 /**
- * Parses a HH:mm time string
+ * Parses HH:mm time string
  */
 export const parseTime = (time: string) => {
   const [h = '00', m = '00'] = (time ?? '00:00').split(':');
@@ -51,8 +52,38 @@ export const parseTime = (time: string) => {
 };
 
 /**
- * Returns the wheel index from scroll position
+ * Returns nearest wheel index from scroll position
  */
-export function getScrollIndex(scrollTop: number) {
-  return Math.round(scrollTop / ITEM_HEIGHT);
-}
+export const snapToNearestItem = (scrollTop: number, length: number): number => {
+  const index = Math.round(scrollTop / ITEM_HEIGHT);
+
+  return Math.max(0, Math.min(index, length - 1));
+};
+
+/**
+ * Returns scrollTop position for index
+ */
+export const getScrollTopForIndex = (index: number) => index * ITEM_HEIGHT;
+
+/**
+ * Checks if scroll correction is needed
+ */
+export const needsScrollCorrection = (current: number, target: number, tolerance = 1) =>
+  Math.abs(current - target) > tolerance;
+
+/**
+ * Scrolls element to index
+ */
+export const scrollToIndex = (element: HTMLDivElement, index: number, behavior: ScrollBehavior = 'auto') => {
+  element.scrollTo({
+    top: getScrollTopForIndex(index),
+    behavior,
+  });
+};
+
+/**
+ * Clears scroll timeout safely
+ */
+export const clearScrollTimeout = (timeout?: NodeJS.Timeout) => {
+  if (timeout) clearTimeout(timeout);
+};
